@@ -1,0 +1,47 @@
+CHIP ALU2 {
+
+    IN  // 16-bit inputs:
+        x[16], y[16],
+        // Control bits:
+        zx, // Zero the x input
+        nx, // Negate the x input
+        zy, // Zero the y input
+        ny, // Negate the y input
+        f,  // Function code: 1 for add, 0 for and
+        no; // Negate the out output
+
+    OUT // 16-bit output
+        out[16],
+
+        // ALU output flags
+        zr, // 1 if out=0, 0 otherwise
+        ng; // 1 if out<0, 0 otherwise
+
+    PARTS:
+    Not16(in=x, out=xneg);
+    And16(a=x, b=xneg, out=zero16); // Creation of a 16-bit string of zeros
+    Not16(in=zero16, out=one16);    // Creation of a 16-bit string of ones
+
+    Mux16(a=x, b=zero16, sel=zx, out=xout0);   // Process the x input
+    Not16(in=xout0, out=xout1);
+    Mux16(a=xout0, b=xout1, sel=nx, out=xout);
+
+    Mux16(a=y, b=zero16, sel=zy, out=yout0);   // Process the y input
+    Not16(in=yout0, out=yout1);
+    Mux16(a=yout0, b=yout1, sel=ny, out=yout);
+
+    And16(a=xout, b=yout, out=out0);        // Process the f function
+    Add16(a=xout, b=yout, out=out1);
+    Mux16(a=out0, b=out1, sel=f, out=out2);
+
+    Not16(in=out2, out=out3);                // Process the no input flag
+    Mux16(a=out2, b=out3, sel=no, out=out4, out=out);
+
+    And16(a=one16, b=out4, out[15]=ng); // Process the ng output flag
+
+    And16(a=one16, b=out4, out[0..7]=out80, out[8..15]=out81); // Process the zr output flag (16-way NOR gate)
+    Or8Way(in=out80, out=zr0);
+    Or8Way(in=out81, out=zr1);
+    Or(a=zr0, b=zr1, out=zr2);
+    Not(in=zr2, out=zr);
+}
