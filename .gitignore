@@ -1,3 +1,5 @@
 *.zip
 *.out
 nand2tetris/
+
+project6/assembler/
